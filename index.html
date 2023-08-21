@@ -1,19 +1,20 @@
-<!doctype html>
+<!DOCTYPE html>
 
 <html>
   <head>
-    <meta charset='utf-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1, user-scalable=no'>
-    <meta name='mobile-web-app-capable' content='yes'>
-    <meta name='apple-mobile-web-app-capable' content='yes'>
-
-    <!-- Valid until June 23, 2022-->
-    <meta http-equiv="origin-trial" content="AtHQISnXB5Y+0ffMLL3C/Zvf24IVI+s5kcP3wbueQbRvBKPpfHckADLzhuWAM4/K4aYBZQnSKIBAX4T8ZacOdQ4AAABOeyJvcmlnaW4iOiJodHRwczovL3RvamkuZ2l0aHViLmlvOjQ0MyIsImZlYXR1cmUiOiJXZWJHUFUiLCJleHBpcnkiOjE2NjM3MTgzOTl9">
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, user-scalable=no"
+    />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
 
     <title>WebGPU Clustered Forward Shading</title>
 
     <style>
-      html, body {
+      html,
+      body {
         height: 100%;
         margin: 0;
         background-color: #000000;
@@ -41,15 +42,18 @@
     </style>
   </head>
   <body>
-    <script src='js/third-party/dat.gui.min.js'></script>
+    <script src="js/third-party/dat.gui.min.js"></script>
     <script type="module">
-      import Stats from './js/third-party/stats.module.js';
+      import Stats from "./js/third-party/stats.module.js";
 
-      import { Gltf2Loader } from './js/mini-gltf2.js';
-      import { FlyingCamera } from './js/camera.js';
+      import { Gltf2Loader } from "./js/mini-gltf2.js";
+      import { FlyingCamera } from "./js/camera.js";
 
-      import { WebGL2Renderer } from './js/webgl2-renderer/webgl2-renderer.js';
-      import { WebGPURenderer } from './js/webgpu-renderer/webgpu-renderer.js';
+      import { WebGL2Renderer } from "./js/webgl2-renderer/webgl2-renderer.js";
+      import { WebGPURenderer } from "./js/webgpu-renderer/webgpu-renderer.js";
+
+      const searchParams = new URLSearchParams(window.location.search);
+      const requestedRenderer = searchParams.get("renderer");
 
       let renderer = null;
       let gltf = null;
@@ -62,39 +66,45 @@
       camera.rotateView(-Math.PI * 0.5, 0);
 
       const appSettings = {
-        renderer: 'webGPU',
-        output: 'clustered-forward',
-        mesh: './media/models/sponza/sponza-ktx.glb',
+        renderer: requestedRenderer === "webGL2" ? "webGL2" : "webGPU",
+        output: "clustered-forward",
+        mesh: "./media/models/sponza/sponza-ktx.glb",
         renderLightSprites: true,
-        lightPattern: 'wandering',
-        lightCount: 128,
-        maxLightRange: 2,
+        lightPattern: "wandering",
+        lightCount: 70,
+        maxLightRange: 3,
       };
 
       const meshPaths = {
-        'Sponza': './media/models/sponza/sponza.glb',
-        'Sponza (KTX)': './media/models/sponza/sponza-ktx.glb',
+        Sponza: "./media/models/sponza/sponza.glb",
+        "Sponza (KTX)": "./media/models/sponza/sponza-ktx.glb",
       };
 
       let gui = new dat.GUI();
 
-      gui.add(appSettings, 'renderer', {
-        webGL2: 'webGL2',
-        webGPU: 'webGPU'
-      }).onChange(onApiChange);
+      if (!requestedRenderer) {
+        gui
+          .add(appSettings, "renderer", {
+            webGL2: "webGL2",
+            webGPU: "webGPU",
+          })
+          .onChange(onApiChange);
+      }
 
-      gui.add(appSettings, 'output', {
-        naiveForward: 'naive-forward',
-        depth: 'depth',
-        depthSlice: 'depth-slice',
-        clusterDistance: 'cluster-distance',
-        lightsPerCluster: 'lights-per-cluster',
-        clusteredForward: 'clustered-forward',
-      }).onChange(onOutputChange);
+      gui
+        .add(appSettings, "output", {
+          naiveForward: "naive-forward",
+          depth: "depth",
+          depthSlice: "depth-slice",
+          clusterDistance: "cluster-distance",
+          lightsPerCluster: "lights-per-cluster",
+          clusteredForward: "clustered-forward",
+        })
+        .onChange(onOutputChange);
 
-      gui.add(appSettings, 'mesh', meshPaths).onChange(initGltf);
+      gui.add(appSettings, "mesh", meshPaths).onChange(initGltf);
 
-      gui.add(appSettings, 'renderLightSprites').onChange(() => {
+      gui.add(appSettings, "renderLightSprites").onChange(() => {
         if (renderer) {
           renderer.lightManager.render = appSettings.renderLightSprites;
         }
@@ -105,13 +115,13 @@
         grid: 'grid',
       }).onChange(onLightPatternChange);*/
 
-      gui.add(appSettings, 'lightCount', 5, 1024).onFinishChange(() => {
+      gui.add(appSettings, "lightCount", 5, 1024).onFinishChange(() => {
         if (renderer) {
           renderer.lightManager.lightCount = appSettings.lightCount;
         }
       });
 
-      gui.add(appSettings, 'maxLightRange', 0.1, 5).onFinishChange(() => {
+      gui.add(appSettings, "maxLightRange", 0.1, 5).onFinishChange(() => {
         if (renderer) {
           renderer.updateLightRange(appSettings.maxLightRange);
         }
@@ -127,11 +137,11 @@
           camera.element = null;
         }
 
-        switch(appSettings.renderer) {
-          case 'webGL2':
+        switch (appSettings.renderer) {
+          case "webGL2":
             renderer = new WebGL2Renderer();
             break;
-          case 'webGPU':
+          case "webGPU":
             renderer = new WebGPURenderer();
             break;
           default:
@@ -163,7 +173,7 @@
 
             renderer.start();
           } catch (err) {
-            console.error('renderer init failed', err);
+            console.error("renderer init failed", err);
             renderer.stop();
             renderer = null;
           }
@@ -191,7 +201,6 @@
         }
       }
       initGltf();
-
     </script>
   </body>
 </html>
